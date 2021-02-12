@@ -1,400 +1,295 @@
-// The Orchlab Cello
-// Code by Gawain Hewitt gawainhewitt.co.uk December 2020
-// A project for Drake Music https://www.drakemusic.org/ for the Orchlab project https://orchlab.org/
-// Made using P5.js https://p5js.org/
-// currently using an old version of P5.sound as the latest version causes glitches on Chrome browse on Android
+let numberOfButtons = 7;
+let endedTouches = []; // array to store ended touches in
+let buttonPositions = []; // position to draw the buttons
+let buttonState = []; //store state of the buttons
+let buttonColour  = []; // colour of the buttons at any given time
+let buttonOffColour = []; // default off colours
+let buttonOnColour = []; // default on colours
+let synthState = []; // we need to store whether a note is playing because the synth is polyphonic and it will keep accepting on messages with every touch or moved touch and we won't be able to switch them all off
+let radius = 50; // radius of the buttons
+let r = 130; // radius of the circle around which the buttons will be drawn
+let angle = 0; // variable within which to store the angle of each button as we draw it
+let step;
+let ongoingTouches = []; // array to copy the ongoing touch info into
+let notes = []; // notes for the synth in this example
+var allTheNotes =  ["C1", "C#1", "D1", "D#1", "E1", "F1", "F#1", "G1", "G#1", "A1", "A#1", "B1",
+                    "C2", "C#2", "D2", "D#2", "E2", "F2", "F#2", "G2", "G#2", "A2", "A#2", "B2",
+                    "C3", "C#3", "D3", "D#3", "E3", "F3", "F#3", "G3", "G#3", "A3", "A#3", "B3",
+                    "C4", "C#4", "D4", "D#4", "E4", "F4", "F#4", "G4", "G#4", "A4", "A#4", "B4",
+                    "C5", "C#5", "D5", "D#5", "E5", "F5", "F#5", "G5", "G#5", "A5", "A#5", "B5",
+                    "C6", "C#6", "D6", "D#6", "E6", "F6", "F#6", "G6", "G#6", "A6", "A#6", "B6",
+                    "C7", "C#7", "D7", "D#7", "E7", "F7", "F#7", "G7", "G#7", "A7", "A#7", "B7",
+                    "C8", "C#8", "D8", "D#8", "E8", "F8", "F#8", "G8", "G#8", "A8", "A#8", "B8"]; // all the notes available to us in the code
+var major = [0,2,4,5,7,9,11,12,14]; // intervals for a major scale for 9 notes
+var pentatonic = [0,2,4,7,9,12,14,16,19]; // intervals for a pentatonic scale for 9 notes
+var minor = [0,2,3,5,7,8,10,12,14]; // intervals for a minor scale for 9 notes
+var majorBlues = [0,2,3,4,7,9,12,14,15]; // intervals for a major blues scale for 9 notes
+var minorBlues = [0,3,5,6,7,10,12,15,17]; // intervals for a minor scale for 9 notes
+var scale; // variable to store the scale in
+var theKey = 0; // this variable sets the default key on load
+var octave = 24; //set the default octave on load
+let synth = new Tone.PolySynth().toDestination(); // create a polysynth
+let soundOn = false; // have we instigated Tone.start() yet? (needed to allow sound)
+synth.set(  // setup the synth - this is audio stuff really
+    {
+      "volume": -15, //remember to allow for the cumalative effects of polyphony
+      "detune": 0,
+      "portamento": 0,
+      "envelope": {
+        "attack": 0.8,
+        "attackCurve": "linear",
+        "decay": 0,
+        "decayCurve": "exponential",
+        "sustain": 0.3,
+        "release": 0.8,
+        "releaseCurve": "exponential"
+      },
+    }
+  );
 
 
-var mode;               // store the detected device - i.e. mobile, tablet, computer
-var NumberOfButtons;    // the number of buttons or switches we are using
-var picSize;            // how big are the images in each case?
-var imagePositionX;     // an array to store the position of the images in each case
-var imagePositionY;     // an array to store the position of the images in each case
-var translatePos1;      // variable to store the first translate argument in
-var translatePos2;      // variable to store the second tranlsate arument in
-var info;               // is the info screen showing?
-var buttonColour;       // colour of buttons
-var onButtonColour;     // colour when button pressed
-var offButtonColour;    // default colour
-var rootColour;         // colour of button for root note
-var stringX1;
-var stringX2;
-var stringY1;
-var stringY2;
-var stringY3;
-var stringY4;
+function setup() {  // setup p5
+  step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6
+  scale = pentatonic; // sets the default scale on load
+  let cnv = createCanvas(400, 400); // create canvas
+  cnv.parent('p5parent'); //put the canvas in a div with this id if needed
 
-var touchID;          // to store the touch ID's in so I can assign a note or sound to an ID and then check if the touch is still active
-var currentTouch;     // to store the current touches so i release the right button on touchended
+  // *** add vanilla JS event listeners for touch which i want to use in place of the p5 ones as I believe that they are significantly faster
+  var el = document.getElementById("p5parent");
+  el.addEventListener("touchstart", handleStart, false);
+  el.addEventListener("touchend", handleEnd, false);
+  el.addEventListener("touchcancel", handleCancel, false);
+  el.addEventListener("touchmove", handleMove, false);
 
-var synth = new Tone.PolySynth().toDestination();        // call a new tone synth and patch it to the sound
-synth.set(
-  {
-    "volume": 0,
-    "detune": 0,
-    "portamento": 0,
-    "envelope": {
-      "attack": 4,
-      "attackCurve": "linear",
-      "decay": 0.1,
-      "decayCurve": "exponential",
-      "release": 4,
-      "releaseCurve": "exponential",
-      "sustain": 0.3
-    },
-    "oscillator": {
-      "partialCount": 0,
-      "partials": [],
-      "phase": 0,
-      "type": "triangle"
+  colorMode(HSB, numberOfButtons + 1); // specify HSB colormode and set the range to be between 0 and numberOfButtons
+  noStroke(); // no stroke on the drawings
+
+  welcomeScreen(); // initial screen for project - also allows an elegant place to put in the Tone.start() command.
+                    // I don't think that this technique will work if animating as the draw() function will instantly overide it
+  createButtonPositions(); // generate the default array info depending on number of buttons
+}
+
+function welcomeScreen() {
+  background(1, 0, 4); // background is grey (remember 5 is maximum because of the setup of colorMode)
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text("MultiTouch helper minisite.Touch screen to start", 100, 50, 200, 200);
+}
+
+function createButtonPositions() {
+  for(let i = 0; i < numberOfButtons; i++) {
+    //convert polar coordinates to cartesian coordinates
+    let _x = r * sin(angle);
+    let _y = r * cos(angle);
+    let theNote = scale[i] + octave + theKey; // the note plus the octave plus the offset from the key menu
+
+    console.log(scale);
+
+    //create our buttonPositions array
+    buttonPositions.push({
+      x: _x + width/2,
+      y: _y + height/2
+    });
+
+    buttonState.push(0); //create default state of the buttons array
+    buttonColour.push(i); // set default colour of the buttons
+    buttonOffColour.push(i); // create default off colours
+    buttonOnColour.push(numberOfButtons); // create default on colours
+    synthState.push(0); //create default state of the synth array
+    notes.push(allTheNotes[theNote]); //create the scale that we are using
+
+    //increase angle by step size
+    angle = angle + step;
+  }
+  console.log(notes);
+}
+
+/*
+
+function draw() {  // p5 draw function - the traditional way to do this in p5 - this is called 60 times a second so needed if want to animate
+  background(1, 0, 4); // background is grey (remmember 5 is maximum)
+
+  for (let i = 0; i < buttonPositions.length; i++) {
+    fill(buttonColour[i], 4, 4);
+    ellipse(buttonPositions[i].x, buttonPositions[i].y, radius * 2);
+  }
+
+// ********** this example draws a circle for each touch *************
+
+  for (let t of ongoingTouches) { // cycle through the touches
+    //console.log(t) // log the touches if you want to for debugging
+    fill(t.identifier % 5, 4, 4); // each touch point's colour relates to touch id. however remember that on iOs the id numbers are huge so this doesn't work so well
+    ellipse(t.clientX, t.clientY, 100); //make a circle at the position of the touch
+    fill(0, 0, 0); // set colour to black
+    //text(t.identifier, t.clientX - 50, t.clientY - 50); // display the touch id on the screen (for debuggin)
+  }
+  for (let t of endedTouches) { // cycle through the end touches
+    let tDiff = millis() - t.time; // set tDiff to tell us how recently we stopped touching
+    if (tDiff < 1000) { // if we stopped touching within the last second
+      fill(t.id % 5, 4, 4); // set the colour based on the id of the touch that we ended
+      ellipse(t.x, t.y, map(tDiff, 0, 1000, 100, 0)); // the circle is drawn smaller and smaller depending on how much time elapsed since touch
     }
   }
-);
-var notes = ["C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"];    // array containing our musical notes (tone.js will respond to these as is)
-const now = Tone.now();
 
-
-function setup() {
-  var renderer = createCanvas(windowWidth, windowHeight); // this paired with below solves the issue of full size screen with scroll bars
-  renderer.canvas.style.display = 'block'; // see above - this pair solves scroll bars - adds CSS styling as block to the canvas we have made
-  buttonState = [0, 0, 0, 0, 0, 0, 0, 0, 0]; // has a "button" been pressed?
-  NumberOfButtons = 8; // I use this at times instead of an integer. However if you change this you will want to change the buttonState array as well, and the files in the sound and image arrays to match
-  picSize = 150; // default for picsize - is this even necessary to declare as I change it later? no idea. Not doing any harm though...
-  imagePositionX = []; // setting up this variable as an array so I can place image position info in it later
-  imagePositionY = []; // as above
-  info = true; // show the info screen? used at startup
-  textSize(width / 20); // how big the text is depending on which screen you are using
-  textAlign(CENTER, CENTER); // where the text goes on the screen
-  buttonColour = [color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), ];
-  onButtonColour = [color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), color(255, 0, 255, 100), ];
-  offButtonColour = [color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), color(255, 0, 0, 100), ];
-  rootColour = color(255, 255, 0, 100);
-  touchID = [-1, -1, -1, -1, -1, -1, -1, -1]; // using -1 as android uses ints starting at 0 as ID's to store the touch ID's in so I can assign a note or sound to an ID and then check if the touch is still active
-  currentTouch = [0, 0, 0, 0, 0, 0, 0, 0]; // to store currently touched things so I can work out which buttons to switch off on touchended
+// ************************************************************************
 
 }
 
-function draw() {
-  background(150, 150, 180);
+*/
 
-  if (width < 500) { // test for portrait mobile
-    mode  = 'portrait_mobile';
-    picSize = height/4;
-    textSize(width / 20);
-    translatePos1 = width/2 - picSize;
-    translatePos2 = 0;
-    imagePositionX = [picSize * 0, picSize * 1, picSize * 0, picSize * 1, picSize * 0, picSize * 1, picSize * 0, picSize * 1];
-    imagePositionY = [picSize * 0, picSize * 0, picSize * 1, picSize * 1, picSize * 2, picSize * 2, picSize * 3, picSize * 3];
-
-  }
-  else if (width < 1000 && height < 500) { // test for landscape mobile
-    mode  = 'landscape_mobile';
-    picSize = width/8;
-    textSize(width / 20);
-    translatePos1 = width/4 + (picSize/4)*2;
-    translatePos2 = (height/2 - picSize) + picSize/4;
-    imagePositionX = [picSize * 0, picSize, picSize * 2, picSize * 3, picSize * 0, picSize, picSize * 2, picSize * 3];
-    imagePositionY = [picSize, picSize * 1.33, picSize, picSize * 1.33, picSize * 1.66, picSize * 2, picSize * 1.66, picSize * 2];
-    stringX1 = picSize * 0 - picSize * 1.5;
-    stringX2 = picSize * 3 + picSize/4 * 6;
-    stringY1 = picSize;
-    stringY2 = picSize/3 * 4;
-    stringY3 = picSize/3 * 5;
-    stringY4 = picSize * 2;
-
-  }
-  else if ((height < 1300 && height > 600) && (width < 1000 && width > 600)) { // test for landscape tablet
-    mode  = 'portrait_tablet';
-    picSize = height/4;
-    textSize(width / 20);
-    translatePos1 = width/2 - picSize;
-    translatePos2 = 0;
-    imagePositionX = [picSize * 0, picSize * 1, picSize * 0, picSize * 1, picSize * 0, picSize * 1, picSize * 0, picSize * 1];
-    imagePositionY = [picSize * 0, picSize * 0, picSize * 1, picSize * 1, picSize * 2, picSize * 2, picSize * 3, picSize * 3];
-
-  } else if ((width < 1300 && width > 600) && (height < 1000 && height > 600)) { // test for landscape tablet
-    mode  = 'landscape_tablet';
-    picSize = width/8;
-    textSize(width / 20);
-    translatePos1 = width/4 + (picSize/4)*2;
-    translatePos2 = (height/2 - picSize) + picSize/4;
-    imagePositionX = [picSize * 0, picSize, picSize * 2, picSize * 3, picSize * 0, picSize, picSize * 2, picSize * 3];
-    imagePositionY = [picSize, picSize * 1.33, picSize, picSize * 1.33, picSize * 1.66, picSize * 2, picSize * 1.66, picSize * 2];
-    stringX1 = picSize * 0 - picSize * 1.5;
-    stringX2 = picSize * 3 + picSize/4 * 6;
-    stringY1 = picSize;
-    stringY2 = picSize/3 * 4;
-    stringY3 = picSize/3 * 5;
-    stringY4 = picSize * 2;
-
-  } else {
-    mode  = 'default';
-    picSize = width/8;
-    textSize(width / 20);
-    translatePos1 = width/4 + (picSize/4)*2;
-    translatePos2 = (height/2 - picSize) + picSize/4;
-    imagePositionX = [picSize * 0, picSize, picSize * 2, picSize * 3, picSize * 0, picSize, picSize * 2, picSize * 3];
-    imagePositionY = [picSize, picSize * 1.33, picSize, picSize * 1.33, picSize * 1.66, picSize * 2, picSize * 1.66, picSize * 2];
-    stringX1 = picSize * 0 - picSize * 1.5;
-    stringX2 = picSize * 3 + picSize/4 * 6;
-    stringY1 = picSize;
-    stringY2 = picSize/3 * 4;
-    stringY3 = picSize/3 * 5;
-    stringY4 = picSize * 2;
-  }
-
-  // text(mode, 10, 30); displays which mode it detects for debugging
-
-  translate(translatePos1, translatePos2); // move x and y "home" based on the if/else loops above (remember this is cumalitive through this loop)
-
-  // this next bit draws the strings
-  strokeWeight(4);
-  line(stringX1, stringY1, stringX2, stringY1);
-  line(stringX1, stringY2, stringX2, stringY2);
-  line(stringX1, stringY3, stringX2, stringY3 );
-  line(stringX1, stringY4, stringX2, stringY4);
-
-  for (var i = 0; i < NumberOfButtons; i++) { // this loop draws the circles and sizes them based on the if/else loops above
-    fill(buttonColour[i]);
-    ellipseMode(RADIUS);
-    ellipse(imagePositionX[i], imagePositionY[i], picSize/4);
-  }
-
-
-// this next bit controls the info screen - also remember that translate is cumalative!
-  if (info) {
-    if ((mode ==='landscape_tablet') || (mode ==='default')) {
-      fill(255, 200, 255, 200);
-      rect(0, 0, picSize * 4, picSize * 2);
-      fill(0);
-      text('The Orchlab Percussion Box', picSize * 2, picSize/2);
-      text('Use the letters QWERTYUI to play', picSize * 2, picSize);
-      text('Or touch the screen', picSize * 2, picSize/4 * 5);
-    }
-    else if (mode ==='landscape_mobile')
-    {
-      fill(255, 200, 255, 200);
-      rect(0, 0, picSize * 4, picSize * 2);
-      fill(0);
-      text('The Orchlab Percussion Box', picSize * 2, picSize/2);
-      text('Touch the screen to play', picSize * 2, picSize);
-    }
-    else if ((mode === 'portrait_tablet') || (mode === 'portrait_mobile'))
-    {
-      fill(255, 200, 255, 200);
-      rect(0, 0, picSize * 2, picSize * 4);
-      fill(0);
-      text('The Orchlab', picSize, picSize);
-      text('Percussion Box', picSize, picSize/4 * 5);
-      text('Touch the screen', picSize, picSize * 2);
-      text('to play', picSize, picSize/4 * 9);
-    }
+function drawSynth() { // instead of using the draw function at 60 frames a second we will call this function when something changes
+  background(1, 0, 4); // background is grey (remember 5 is maximum)
+  for (let i = 0; i < numberOfButtons; i++) {
+    fill(buttonColour[i], 4, 4);
+    ellipse(buttonPositions[i].x, buttonPositions[i].y, radius * 2);
   }
 }
 
-function mousePressed() {                 // this is a P5.js event listener. If the mouse is pressed and on one of the buttons, then the corrosponding file number is sent to my buttonPressed function
-  for (var i = 0; i < NumberOfButtons; i++) {
-    let d = dist(mouseX, mouseY, imagePositionX[i] + translatePos1, imagePositionY[i] + translatePos2);
-    if (d < picSize/4) {
-      buttonPressed(i);
+function handleStart(e) {
+  e.preventDefault(); // prevent default touch actions like scroll
+  if(soundOn){
+    let _touches = e.changedTouches; //assign the changedTouches to an array called touches
+    ongoingTouches.push(copyTouch(_touches[0])); //copy the new touch into the ongoingTouches array
+    //console.log(ongoingTouches); // debugging
+    buttonPressed(e);
+  }else{
+    Tone.start(); // we need this to allow audio to start.
+    soundOn = true;
+    drawSynth();
+    let _touches = e.changedTouches; //assign the changedTouches to an array called touches
+    ongoingTouches.push(copyTouch(_touches[0])); //copy the new touch into the ongoingTouches array
+  }
+}
+
+function handleMove(e) {
+  e.preventDefault(); // prevent default touch actions like scroll
+  let _touches = e.changedTouches; //assign the changedTouches to an array called touches
+
+  for (var i = 0; i < _touches.length; i++) {
+    var idx = ongoingTouchIndexById(_touches[i].identifier); //call a function that will compare this touch against the list and assign the return to idx
+    if (idx >= 0) { // did we get a match?
+      // console.log("continuing touch "+idx); // debugging
+    // console.log("index = " + idx);
+      ongoingTouches.splice(idx, 1, copyTouch(_touches[i]));  // swap in the new touch record
+      // console.log(".");
+    } else { // no match
+      console.log("can't figure out which touch to continue");
     }
   }
+  buttonPressed(e);
 }
 
-function mouseReleased() {                 // this is a P5.js event listener. If the mouse is pressed and on one of the buttons, then the corrosponding file number is sent to my buttonPressed function
-  for (var i = 0; i < NumberOfButtons; i++) {
+function handleEnd(e) {
+  e.preventDefault(); // prevent default touch actions like scroll
+  let _touches = e.changedTouches; //assign the changedTouches to an array called touches
 
-      endedTrack(i);
+  for (var i = 0; i < _touches.length; i++) {
 
-  }
-}
+    var idx = ongoingTouchIndexById(_touches[i].identifier); //call a function that will compare this touch against the list and assign the return to idx
 
-function touchStarted() {               // same as above but for touch. P5 manages touch/mouse conflicts etc which is nice
-  if(info === true){
-    Tone.start();
-    info = false;
-  }
-  for (var i = 0; i < NumberOfButtons; i++) {
-    for(let j = 0; j < touches.length; j++) {
-      let t = dist(touches[j].x, touches[j].y, imagePositionX[i] + translatePos1, imagePositionY[i] + translatePos2);
-      if (t < picSize/4) {
-            touchID[i] = touches[j].id;
-            buttonPressed(i);
-      }
+    if (idx >= 0) { // did we get a match?
+      console.log("touchend "+idx);
+      //buttonPressed(e);
+      ongoingTouches.splice(idx, 1);  // remove it; we're done
+    } else { // no match
+      console.log("can't figure out which touch to end");
     }
   }
-  return false;
+  buttonPressed(e);
+    for (let t of e.changedTouches) { // cycle through the changedTouches array
+      // console.log("touch id " + t.identifier + // debugging
+      //   " released at x: " + t.clientX +
+      //   " y: " + t.clientY)
+      endedTouches.push({ //create our ended touches array of objects from which we can call .time, .id, .x, .y
+        time: millis(),
+        id: t.identifier,
+        x: t.clientX,
+        y: t.clientY
+      });
+    }
 }
 
-function touchEnded() {             // as coded this currently follows a touch around the screen. So if you click on a "button", move the touch and then let go, it will only release the button when that touch is ended, regardless of position
-  if(touches.length < 1){                   // if there are no touch events (as in you released the last one)
-      for (var i = 0; i < NumberOfButtons; i++) {
-        if(touchID[i] != -1){               //if the touchID number in the array is -1 then no touch - therefore if there is one that is not that number it has previously been touched and needs to be switched off
-          endedTrack(i);                    // call the endedTrack function with the correct track number
+function handleCancel(e) { // this handles touchcancel
+  e.preventDefault();  // prevent default touch actions like scroll
+  console.log("touchcancel."); //debugging
+  var touches = e.changedTouches; //assign the changedTouches to an array called touches
+
+  for (var i = 0; i < touches.length; i++) {
+    var idx = ongoingTouchIndexById(touches[i].identifier); //call a function that will compare this touch against the list and assign the return to idx
+    ongoingTouches.splice(idx, 1);  // remove it; we're done
+  }
+}
+
+function copyTouch({ identifier, clientX, clientY }) { // this function is used to facilitate copying touch ID properties
+  return { identifier, clientX, clientY };
+}
+
+function ongoingTouchIndexById(idToFind) { //compares the more complex stuff to give a simple answer to the question "which touch"
+for (var i = 0; i < ongoingTouches.length; i++) {
+  var id = ongoingTouches[i].identifier;
+
+  if (id == idToFind) {
+    return i;
+  }
+}
+return -1;    // not found
+}
+
+function buttonPressed() {
+
+  let _touches = ongoingTouches; //assign the changedTouches to an array called touches
+  let _buttonState = []; // array to store buttonstate in
+
+  for(let i = 0; i < numberOfButtons; i++) {
+    _buttonState.push(0);
+  }
+
+  //**** first let's check if each touch is on a button, and store the state in our local variable */
+
+  if(_touches.length != 0){ // if the touches array isn't empty
+    for (var t = 0; t < _touches.length; t++) {  // for each touch
+      for (let i = 0; i < numberOfButtons; i++) { // for each button
+        let d = dist(_touches[t].clientX, _touches[t].clientY, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
+        if (d < radius) { // is the touch where a button is?
+          _buttonState[i] = 1; // the the button is on
+          console.log("if");
+        }else{
+          _buttonState[i] = _buttonState[i] + 0; // otherwise add a 0 to the state of that button (another toucch might have put it on you see)
+          console.log("else");
         }
       }
-  }
-  else {                                    // if there is still one of more touch event but touchEnded has been triggered
-    for (var i = 0; i < NumberOfButtons; i++) {   // this loop sets the currentTouch array to zero to begin tests
-      currentTouch[i] = 0;
-    }
-    for(let j = 0; j < touches.length; j++) {     // step through the live touches
-      for (var i = 0; i < NumberOfButtons; i++) { // compare each touch to each "button"
-        if(touchID[i] === touches[j].id){         // if there is a match between a live touch and a stored touch
-          currentTouch[i] = 1;                    // set that index of the currentTouch array to 1 to show it should remain
-        }
-      }
-    }
-    for (var i = 0; i < NumberOfButtons; i++) {   // step through the "buttons"
-      if((currentTouch[i] === 0)) { // if there are any where there is no touch
-        endedTrack(i);                                          //switch it off!
-      }
     }
   }
-  return false; /* prevents the mobile browser from processing some default
-  * touch events, like swiping left for "back" or scrolling
-  * the page.*/
-}
 
-// this prevents dragging screen around
-function touchMoved() {
-  return false;
-}
+  console.log(_buttonState);
 
-function keyPressed() {     // this listens for key presses on the ol' Qwerty - doesn't seem to allow more than four or five at once. Not sure why
-  switch(key) {
-    case "q" :
-      buttonPressed(0);
-      break;
-    case "Q" :
-      buttonPressed(0);
-      break;
-    case "w" :
-      buttonPressed(1);
-      break;
-    case "W" :
-      buttonPressed(1);
-      break;
-    case "e" :
-      buttonPressed(2);
-      break;
-    case "E" :
-      buttonPressed(2);
-      break;
-    case "r" :
-      buttonPressed(3);
-      break;
-    case "R" :
-      buttonPressed(3);
-      break;
-    case "t" :
-      buttonPressed(4);
-      break;
-    case "T" :
-      buttonPressed(4);
-      break;
-    case "y" :
-      buttonPressed(5);
-      break;
-    case "Y" :
-      buttonPressed(5);
-      break;
-    case "u" :
-      buttonPressed(6);
-      break;
-    case "U" :
-      buttonPressed(6);
-      break;
-    case "i" :
-      buttonPressed(7);
-      break;
-    case "I" :
-      buttonPressed(7);
-      break;
+  // ********** now our _buttonState array should accurately reflect the state of the touches and buttons so we can do something with it
+
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    if(_touches.length === 0){ // if there are no touches at all
+      stopSynth(i); // call stop synth for each button
+    }else if(_buttonState[i] === 1){ // otherwise if the button is on
+      playSynth(i); // call play synth for that button
+    }else{ // otherwise if the button is off
+      stopSynth(i); // call stopsynth for that button
+    }
   }
-}
-
-function keyReleased() {     // this listens for key presses on the ol' Qwerty
-  switch(key) {
-    case "q" :
-      endedTrack(0);
-      break;
-    case "Q" :
-      endedTrack(0);
-      break;
-    case "w" :
-      endedTrack(1);
-      break;
-    case "W" :
-      endedTrack(1);
-      break;
-    case "e" :
-      endedTrack(2);
-      break;
-    case "E" :
-      endedTrack(2);
-      break;
-    case "r" :
-      endedTrack(3);
-      break;
-    case "R" :
-      endedTrack(3);
-      break;
-    case "t" :
-      endedTrack(4);
-      break;
-    case "T" :
-      endedTrack(4);
-      break;
-    case "y" :
-      endedTrack(5);
-      break;
-    case "Y" :
-      endedTrack(5);
-      break;
-    case "u" :
-      endedTrack(6);
-      break;
-    case "U" :
-      endedTrack(6);
-      break;
-    case "i" :
-      endedTrack(7);
-      break;
-    case "I" :
-      endedTrack(7);
-      break;
-  }
-}
-
-function windowResized() {                    // p5 function that is called every time the window is resized - allows the site to respond to changing dimensions
-  resizeCanvas(windowWidth, windowHeight);
-}
-
-function buttonPressed(i) {             // my function for playing files and setting the buttonstate. At present the images are linked to the onended command for p5sound which calls enndedTrack
-  if(info === true){                    // this also needs to be in here as well as in touch started to handle qwerty keys and mouse events
-    Tone.start();
-    info = false;
-  }
-  playSynth(i);
-  buttonState[i] = 1;
-  buttonColour[i] = onButtonColour[i];
-}
-
-function endedTrack(i) {                     // when the file stops playing this is called and changes images and buttonState
-  buttonColour[i] = offButtonColour[i];
-  buttonState[i] = 0;
-  touchID[i] = -1;
-  currentTouch[i] = 0;
-  synth.triggerRelease(notes[i]);
-  //stopSynth(i);
 }
 
 function playSynth(i) {
-  synth.triggerAttack(notes[i], Tone.now());
+  if(synthState[i] === 0) { // if the synth is not playing that note at the moment
+    synth.triggerAttack(notes[i]); // play the note
+    synthState[i] = 1; // change the array to reflect that the note is playing
+    buttonColour[i] = buttonOnColour[i]; //change the colour of the button to on colour
+    drawSynth();
+  }
 }
 
 function stopSynth(i) {
-  //synth.triggerRelease(notes[i], Tone.now());
-  //synth.releaseAll();
+  if(synthState[i] === 1) { // if the synth is playing that note at the moment
+    synth.triggerRelease(notes[i]); // stop the note
+    synthState[i] = 0; // change the array to reflect that the note is playing
+    buttonColour[i] = buttonOffColour[i]; //change the colour of the button to off colour
+    drawSynth();
+  }
 }

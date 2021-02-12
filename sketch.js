@@ -6,8 +6,9 @@ let buttonColour  = []; // colour of the buttons at any given time
 let buttonOffColour = []; // default off colours
 let buttonOnColour = []; // default on colours
 let synthState = []; // we need to store whether a note is playing because the synth is polyphonic and it will keep accepting on messages with every touch or moved touch and we won't be able to switch them all off
-let radius = 50; // radius of the buttons
-let r = 130; // radius of the circle around which the buttons will be drawn
+let radius; // radius of the buttons
+let offset; // to store the difference between x and y readings once menus are taken into account
+let r; // radius of the circle around which the buttons will be drawn
 let angle = 0; // variable within which to store the angle of each button as we draw it
 let step;
 let ongoingTouches = []; // array to copy the ongoing touch info into
@@ -25,44 +26,48 @@ var pentatonic = [0,2,4,7,9,12,14,16,19]; // intervals for a pentatonic scale fo
 var minor = [0,2,3,5,7,8,10,12,14]; // intervals for a minor scale for 9 notes
 var majorBlues = [0,2,3,4,7,9,12,14,15]; // intervals for a major blues scale for 9 notes
 var minorBlues = [0,3,5,6,7,10,12,15,17]; // intervals for a minor scale for 9 notes
+var scales = ["default", pentatonic, major, minor, majorBlues, minorBlues];
 var scale; // variable to store the scale in
 var theKey = 0; // this variable sets the default key on load
-var octave = 24; //set the default octave on load
-let synth = new Tone.PolySynth().toDestination(); // create a polysynth
+var octave = 36; //set the default octave on load
+let synth;
 let soundOn = false; // have we instigated Tone.start() yet? (needed to allow sound)
-synth.set(  // setup the synth - this is audio stuff really
-    {
-      "volume": -15, //remember to allow for the cumalative effects of polyphony
-      "detune": 0,
-      "portamento": 0,
-      "envelope": {
-        "attack": 0.8,
-        "attackCurve": "linear",
-        "decay": 0,
-        "decayCurve": "exponential",
-        "sustain": 0.3,
-        "release": 0.8,
-        "releaseCurve": "exponential"
-      },
-    }
-  );
+let whichKey = [0,0,0,0,0,0,0,0,0];
 
 
 function setup() {  // setup p5
   step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6
   scale = pentatonic; // sets the default scale on load
-  let cnv = createCanvas(400, 400); // create canvas
-  cnv.parent('p5parent'); //put the canvas in a div with this id if needed
+
 
   // *** add vanilla JS event listeners for touch which i want to use in place of the p5 ones as I believe that they are significantly faster
-  var el = document.getElementById("p5parent");
+  let el = document.getElementById("p5parent");
   el.addEventListener("touchstart", handleStart, false);
   el.addEventListener("touchend", handleEnd, false);
   el.addEventListener("touchcancel", handleCancel, false);
   el.addEventListener("touchmove", handleMove, false);
+  // el.addEventListener("mousedown", handleMouseDown);
+  // el.addEventListener("mouseup", handleMouseUp);
+  offset = el.getBoundingClientRect(); // move touch readings to allow for the menu
 
+  document.addEventListener('keydown', handleKeyDown); //add listener for keyboard input
+  document.addEventListener('keyup', handleKeyUp); //add listener for keyboard input
+
+  let masterDiv = document.getElementById("container");
+  let divPos = masterDiv.getBoundingClientRect();
+  let masterLeft = divPos.left;
+  let masterRight = divPos.right;
+  let cnvDimension = masterRight - masterLeft;
+
+  console.log("canvas sixe = " + cnvDimension);
+
+  let cnv = createCanvas(cnvDimension, cnvDimension); // create canvas
+  cnv.parent('p5parent'); //put the canvas in a div with this id if needed
   colorMode(HSB, numberOfButtons + 1); // specify HSB colormode and set the range to be between 0 and numberOfButtons
   noStroke(); // no stroke on the drawings
+
+  radius = width/8;
+  r = width/3;
 
   welcomeScreen(); // initial screen for project - also allows an elegant place to put in the Tone.start() command.
                     // I don't think that this technique will work if animating as the draw() function will instantly overide it
@@ -73,7 +78,7 @@ function welcomeScreen() {
   background(1, 0, 4); // background is grey (remember 5 is maximum because of the setup of colorMode)
   textSize(32);
   textAlign(CENTER, CENTER);
-  text("MultiTouch helper minisite.Touch screen to start", 100, 50, 200, 200);
+  text("Welcome to the Orchlab virtual string section. Touch screen or click mouse or use keys QWERTYU", width/10, height/10, (width/10) * 8, (height/10) * 8);
 }
 
 function createButtonPositions() {
@@ -102,6 +107,7 @@ function createButtonPositions() {
     angle = angle + step;
   }
   console.log(notes);
+  console.log("offset height = " + offset.top);
 }
 
 /*
@@ -145,6 +151,33 @@ function drawSynth() { // instead of using the draw function at 60 frames a seco
   }
 }
 
+function startAudio() {
+    Tone.start(); // we need this to allow audio to start.
+    soundOn = true;
+    drawSynth();
+    synth = new Tone.PolySynth({
+      "oscillator": {
+        type: 'sawtooth6'
+      }
+    }).toDestination(); // create a polysynth
+    synth.set(  // setup the synth - this is audio stuff really
+        {
+          "volume": -10, //remember to allow for the cumalative effects of polyphony
+          "detune": 0,
+          "portamento": 0,
+          "envelope": {
+            "attack": 25,
+            "attackCurve": "linear",
+            "decay": 0,
+            "decayCurve": "exponential",
+            "sustain": 0.3,
+            "release": 5,
+            "releaseCurve": "exponential"
+          },
+        }
+      );
+}
+
 function handleStart(e) {
   e.preventDefault(); // prevent default touch actions like scroll
   if(soundOn){
@@ -153,9 +186,7 @@ function handleStart(e) {
     //console.log(ongoingTouches); // debugging
     buttonPressed(e);
   }else{
-    Tone.start(); // we need this to allow audio to start.
-    soundOn = true;
-    drawSynth();
+    startAudio();
     let _touches = e.changedTouches; //assign the changedTouches to an array called touches
     ongoingTouches.push(copyTouch(_touches[0])); //copy the new touch into the ongoingTouches array
   }
@@ -246,10 +277,12 @@ function buttonPressed() {
 
   //**** first let's check if each touch is on a button, and store the state in our local variable */
 
+  // i'm using offset.top to change the touch reference to take into consideration the DOM elements above it. If needed you can do the same with  left, top, right, bottom, x, y, width, height.
+
   if(_touches.length != 0){ // if the touches array isn't empty
     for (var t = 0; t < _touches.length; t++) {  // for each touch
       for (let i = 0; i < numberOfButtons; i++) { // for each button
-        let d = dist(_touches[t].clientX, _touches[t].clientY, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
+        let d = dist(_touches[t].clientX, _touches[t].clientY - offset.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
         if (d < radius) { // is the touch where a button is?
           _buttonState[i] = 1; // the the button is on
           console.log("if");
@@ -276,6 +309,134 @@ function buttonPressed() {
   }
 }
 
+function handleKeyDown(e) {
+
+  var key = e.code;
+  console.log("keydown "+key); //debugging
+  if(soundOn){
+    switch(key) {  /// working here! - retriggering keys so remove the play synth and do a for loop on the array to play
+      case "KeyQ" :
+        if(whichKey[0] === 0) {
+          playSynth(0);
+          whichKey[0] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyW" :
+        if(whichKey[1] === 0) {
+          playSynth(1);
+          whichKey[1] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyE" :
+        if(whichKey[2] === 0) {
+          playSynth(2);
+          whichKey[2] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyR" :
+        if(whichKey[3] === 0) {
+          playSynth(3);
+          whichKey[3] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyT" :
+        if(whichKey[4] === 0) {
+          playSynth(4);
+          whichKey[4] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyY" :
+        if(whichKey[5] === 0) {
+          playSynth(5);
+          whichKey[5] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyU" :
+        if(whichKey[6] === 0) {
+          playSynth(6);
+          whichKey[6] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyI" :
+        if(whichKey[7] === 0) {
+          playSynth(7);
+          whichKey[7] = 1;
+          break;
+        } else {
+          break;
+        }
+      case "KeyO" :
+        if(whichKey[8] === 0) {
+          playSynth(8);
+          whichKey[8] = 1;
+          break;
+        } else {
+          break;
+        }
+    }
+  }else{
+    startAudio();
+  }
+}
+
+function handleKeyUp(e) {
+  var key = e.code;
+  console.log("keyup "+key); //debugging
+  switch(key) {
+    case "KeyQ" :
+      stopSynth(0);
+      whichKey[0] = 0;
+      break;
+    case "KeyW" :
+      stopSynth(1);
+      whichKey[1] = 0;
+      break;
+    case "KeyE" :
+      stopSynth(2);
+      whichKey[2] = 0;
+      break;
+    case "KeyR" :
+      stopSynth(3);
+      whichKey[3] = 0;
+      break;
+    case "KeyT" :
+      stopSynth(4);
+      whichKey[4] = 0;
+      break;
+    case "KeyY" :
+      stopSynth(5);
+      whichKey[5] = 0;
+      break;
+    case "KeyU" :
+      stopSynth(6);
+      whichKey[6] = 0;
+      break;
+    case "KeyI" :
+      stopSynth(7);
+      whichKey[7] = 0;
+      break;
+    case "KeyO" :
+      stopSynth(8);
+      whichKey[8] = 0;
+      break;
+  }
+
+}
+
 function playSynth(i) {
   if(synthState[i] === 0) { // if the synth is not playing that note at the moment
     synth.triggerAttack(notes[i]); // play the note
@@ -293,3 +454,123 @@ function stopSynth(i) {
     drawSynth();
   }
 }
+
+ // the following is to do with the select boxes and making them look pretty
+
+
+ selectBoxes("keymenu"); //make a pretty keymenu
+ selectBoxes("scalemenu"); //make a pretty scalemenu
+ selectBoxes("octavemenu"); //make a pretty octavemenu
+
+ function selectBoxes(name) {
+
+ var x, i, j, l, ll, selElmnt, a, b, c;
+ /* Look for any elements with the class "custom-select": */
+ x = document.getElementsByClassName(name);
+ l = x.length;
+ for (i = 0; i < l; i++) {
+   selElmnt = x[i].getElementsByTagName("select")[0];
+   ll = selElmnt.length;
+   /* For each element, create a new DIV that will act as the selected item: */
+   a = document.createElement("DIV");
+   a.setAttribute("class", "select-selected");
+   a.innerHTML = selElmnt.options[selElmnt.selectedIndex].innerHTML;
+   x[i].appendChild(a);
+   /* For each element, create a new DIV that will contain the option list: */
+   b = document.createElement("DIV");
+   b.setAttribute("class", "select-items select-hide");
+   for (j = 1; j < ll; j++) {
+     /* For each option in the original select element,
+     create a new DIV that will act as an option item: */
+     c = document.createElement("DIV");
+     c.innerHTML = selElmnt.options[j].innerHTML;
+     c.addEventListener("click", function(e) {
+         /* When an item is clicked, update the original select box,
+         and the selected item: */
+         var y, i, k, s, h, sl, yl;
+         s = this.parentNode.parentNode.getElementsByTagName("select")[0];
+         sl = s.length;
+         h = this.parentNode.previousSibling;
+         for (i = 0; i < sl; i++) {
+           if (s.options[i].innerHTML == this.innerHTML) {
+             s.selectedIndex = i;
+             console.log(name + (" ") + s.selectedIndex); //debugging
+             handleMenu(name, s.selectedIndex);   // send the menu name and the index of the selection to the handlemenu function
+             h.innerHTML = this.innerHTML;
+             y = this.parentNode.getElementsByClassName("same-as-selected");
+             yl = y.length;
+             for (k = 0; k < yl; k++) {
+               y[k].removeAttribute("class");
+             }
+             this.setAttribute("class", "same-as-selected");
+             break;
+           }
+         }
+         h.click();
+     });
+     b.appendChild(c);
+   }
+   x[i].appendChild(b);
+   a.addEventListener("click", function(e) {
+     /* When the select box is clicked, close any other select boxes,
+     and open/close the current select box: */
+     e.stopPropagation();
+     closeAllSelect(this);
+     this.nextSibling.classList.toggle("select-hide");
+     this.classList.toggle("select-arrow-active");
+     //console.log(a.innerHTML);
+   });
+ }
+ }
+
+ function closeAllSelect(elmnt) {
+   /* A function that will close all select boxes in the document,
+   except the current select box: */
+   var x, y, i, xl, yl, arrNo = [];
+   x = document.getElementsByClassName("select-items");
+   y = document.getElementsByClassName("select-selected");
+   xl = x.length;
+   yl = y.length;
+   for (i = 0; i < yl; i++) {
+     if (elmnt == y[i]) {
+       arrNo.push(i)
+     } else {
+       y[i].classList.remove("select-arrow-active");
+     }
+   }
+   for (i = 0; i < xl; i++) {
+     if (arrNo.indexOf(i)) {
+       x[i].classList.add("select-hide");
+     }
+   }
+ }
+
+ /* If the user clicks anywhere outside the select box,
+ then close all select boxes: */
+ document.addEventListener("click", closeAllSelect);
+
+ function handleMenu(menu, index) { // function to handle the menu selections and change scales and keys
+   if(menu === "keymenu"){
+     theKey = index -1; // set the variable to the correct scale - the minus 1 is to offset it to allow for the default menu setting
+     console.log("the key is "+theKey); //debugging
+     for(var i = 0; i < 9; i++) {
+       var theNote = scale[i] + octave + theKey; // the note plus the octave plus the offset from the key menu
+       notes[i] = allTheNotes[theNote]; // pick the notes from the all the notes array
+     }
+   }else if(menu === "scalemenu"){
+     console.log("the scale is "+index);
+     scale = scales[index];
+     console.log(scale);
+     for(var i = 0; i < 9; i++) {
+       var theNote = scale[i] + octave + theKey; // the note plus the octave plus the offset from the key menu
+       notes[i] = allTheNotes[theNote]; // pick the notes from the all the notes array
+     }
+   } else {
+     console.log("the octave is "+index);
+     octave = index * 12;                      //octave switching here WORKING HERE
+     for(var i = 0; i < 9; i++) {
+       var theNote = scale[i] + octave + theKey; // the note plus the octave plus the offset from the key menu
+       notes[i] = allTheNotes[theNote]; // pick the notes from the all the notes array
+     }
+   }
+ }

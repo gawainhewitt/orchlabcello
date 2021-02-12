@@ -12,7 +12,62 @@
 
 <body>
 
-<div id="p5parent"></div>
+  <div id="container">
+
+      <div id="selections">
+        <div id="select1">
+          <div class="keymenu" style="width: 100%;">
+            <select id="selectKey">
+              <option value="0">Key</option>
+              <option value="1">Key: C</option>
+              <option value="2">Key: C#/Db</option>
+              <option value="3">Key: D</option>
+              <option value="4">Key: D#/Eb</option>
+              <option value="5">Key: E</option>
+              <option value="6">Key: F</option>
+              <option value="7">Key: F#/Gb</option>
+              <option value="8">Key: G</option>
+              <option value="9">Key: G#/Ab</option>
+              <option value="10">Key: A</option>
+              <option value="11">Key: A#/Bb</option>
+              <option value="12">Key: B</option>
+            </select>
+          </div>
+        </div>
+
+
+
+        <div id="select2">
+          <div class="scalemenu" style="width: 100%;">
+            <select id="selectScale">
+              <option value="0">Scale</option>
+              <option value="1">Pentatonic</option>
+              <option value="2">Major</option>
+              <option value="3">Minor</option>
+              <option value="4">Major Blues</option>
+              <option value="5">Minor Blues</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="select3">
+          <div class="octavemenu" style="width: 100%;">
+            <select id="selectScale">
+              <option value="0">Octave</option>
+              <option value="1">0</option>
+              <option value="2">1</option>
+              <option value="3">2</option>
+              <option value="4">3</option>
+            </select>
+          </div>
+        </div>
+
+        <span class="clear"></span> <!-- this keeps the above elements within the parent div-->
+      </div>
+
+    <div id="p5parent"></div>
+
+  </div>
 
 <script src="sketch.js"></script>
 

@@ -66,7 +66,7 @@ function setup() {  // setup p5
   el.addEventListener("touchend", handleEnd, false);
   el.addEventListener("touchcancel", handleCancel, false);
   el.addEventListener("touchmove", handleMove, false);
-  // el.addEventListener("mousedown", handleMouseDown); // using the p5 ones for now
+  // el.addEventListener("mousedown", handleMouseDown); // using the p5 ones for now however no interaction with touch so i think mouse functions are interfering with touch
   // el.addEventListener("mouseup", handleMouseUp);
   offset = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
@@ -190,39 +190,39 @@ function startAudio() {
       );
 }
 
-function mousePressed() { //p5 mouse function/ event handler
-  if(soundOn) {
-    for (let i = 0; i < numberOfButtons; i++) { // for each button
-      let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
-      if (d < radius) { // is the mouse where a button is?
-        mouseState[i] = 1;
-      }
-      handleMouseAndKeys();
-    }
-  }else{
-    startAudio();
-  }
-}
+// function mousePressed() { //p5 mouse function/ event handler
+//   if(soundOn) {
+//     for (let i = 0; i < numberOfButtons; i++) { // for each button
+//       let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
+//       if (d < radius) { // is the mouse where a button is?
+//         mouseState[i] = 1;
+//       }
+//       handleMouseAndKeys();
+//     }
+//   }else{
+//     startAudio();
+//   }
+// }
 
-function mouseReleased() { //p5 mouse function/ event handler
-  for (let i = 0; i < numberOfButtons; i++) { // for each button
-    mouseState[i] = 0;
-    }
-  handleMouseAndKeys();
-}
+// function mouseReleased() { //p5 mouse function/ event handler
+//   for (let i = 0; i < numberOfButtons; i++) { // for each button
+//     mouseState[i] = 0;
+//     }
+//   handleMouseAndKeys();
+// }
 
-function mouseDragged() {
+// function mouseDragged() {
 
-  for (let i = 0; i < numberOfButtons; i++) { // for each button
-    let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
-    if (d < radius) { // is the mouse where a button is?
-      mouseState[i] = 1;
-    }else{
-      mouseState[i] = 0;
-    }
-  }
-  handleMouseAndKeys();
-}
+//   for (let i = 0; i < numberOfButtons; i++) { // for each button
+//     let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
+//     if (d < radius) { // is the mouse where a button is?
+//       mouseState[i] = 1;
+//     }else{
+//       mouseState[i] = 0;
+//     }
+//   }
+//   handleMouseAndKeys();
+// }
 
 function handleMouseAndKeys() {   // this function ensures only one "on" or "off" between mouse and key interactions
   for (let i = 0; i < numberOfButtons; i++) { // for each button

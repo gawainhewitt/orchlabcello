@@ -1,4 +1,9 @@
-let numberOfButtons = 7;
+// sizing and resizing dynamically is happening in css #mycanvas and #parentdiv - overrides what's happening in here
+
+
+let numberOfButtons = 7;// automatically generate circular synth based on this
+
+
 let endedTouches = []; // array to store ended touches in
 let buttonPositions = []; // position to draw the buttons
 let buttonState = []; //store state of the buttons
@@ -30,15 +35,30 @@ var scales = ["default", pentatonic, major, minor, majorBlues, minorBlues];
 var scale; // variable to store the scale in
 var theKey = 0; // this variable sets the default key on load
 var octave = 36; //set the default octave on load
-let synth;
+let synth; // variable within which to create the synth
 let soundOn = false; // have we instigated Tone.start() yet? (needed to allow sound)
-let whichKey = [0,0,0,0,0,0,0,0,0];
+let whichKey = [0,0,0,0,0,0,0,0,0]; // array ensures only one trigger per qwerty click
+let mouseState = []; // variable to store mouse clicks and drags in
 
 
 function setup() {  // setup p5
   step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6
   scale = pentatonic; // sets the default scale on load
 
+  document.addEventListener('keydown', handleKeyDown); //add listener for keyboard input
+  document.addEventListener('keyup', handleKeyUp); //add listener for keyboard input
+
+  let masterDiv = document.getElementById("container");
+  let divPos = masterDiv.getBoundingClientRect(); //The returned value is a DOMRect object which is the smallest rectangle which contains the entire element, including its padding and border-width. The left, top, right, bottom, x, y, width, and height properties describe the position and size of the overall rectangle in pixels.
+  let masterLeft = divPos.left; // distance from left of screen to left edge of bounding box
+  let masterRight = divPos.right; // distance from left of screen to the right edge of bounding box
+  let cnvDimension = masterRight - masterLeft; // size of div -however in some cases this is wrong, so i am now using css !important instead
+
+  console.log("canvas sixe = " + cnvDimension);
+
+  let cnv = createCanvas(cnvDimension, cnvDimension); // create canvas - because i'm now using css size and !important this sizing actually reduntant
+  cnv.id('mycanvas'); // assign id to the canvas so i can style it - this is where the css dynamic sizing is applied
+  cnv.parent('p5parent'); //put the canvas in a div with this id if needed - this also needs to be sized
 
   // *** add vanilla JS event listeners for touch which i want to use in place of the p5 ones as I believe that they are significantly faster
   let el = document.getElementById("p5parent");
@@ -46,28 +66,19 @@ function setup() {  // setup p5
   el.addEventListener("touchend", handleEnd, false);
   el.addEventListener("touchcancel", handleCancel, false);
   el.addEventListener("touchmove", handleMove, false);
-  // el.addEventListener("mousedown", handleMouseDown);
+  // el.addEventListener("mousedown", handleMouseDown); // using the p5 ones for now
   // el.addEventListener("mouseup", handleMouseUp);
-  offset = el.getBoundingClientRect(); // move touch readings to allow for the menu
+  offset = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
-  document.addEventListener('keydown', handleKeyDown); //add listener for keyboard input
-  document.addEventListener('keyup', handleKeyUp); //add listener for keyboard input
-
-  let masterDiv = document.getElementById("container");
-  let divPos = masterDiv.getBoundingClientRect();
-  let masterLeft = divPos.left;
-  let masterRight = divPos.right;
-  let cnvDimension = masterRight - masterLeft;
-
-  console.log("canvas sixe = " + cnvDimension);
-
-  let cnv = createCanvas(cnvDimension, cnvDimension); // create canvas
-  cnv.parent('p5parent'); //put the canvas in a div with this id if needed
   colorMode(HSB, numberOfButtons + 1); // specify HSB colormode and set the range to be between 0 and numberOfButtons
   noStroke(); // no stroke on the drawings
 
   radius = width/8;
   r = width/3;
+
+  for (let i = 0; i < numberOfButtons; i++) { // for each button build mouseState default array
+    mouseState.push(0);
+  }
 
   welcomeScreen(); // initial screen for project - also allows an elegant place to put in the Tone.start() command.
                     // I don't think that this technique will work if animating as the draw() function will instantly overide it
@@ -143,6 +154,7 @@ function draw() {  // p5 draw function - the traditional way to do this in p5 - 
 
 */
 
+
 function drawSynth() { // instead of using the draw function at 60 frames a second we will call this function when something changes
   background(1, 0, 4); // background is grey (remember 5 is maximum)
   for (let i = 0; i < numberOfButtons; i++) {
@@ -162,7 +174,7 @@ function startAudio() {
     }).toDestination(); // create a polysynth
     synth.set(  // setup the synth - this is audio stuff really
         {
-          "volume": -10, //remember to allow for the cumalative effects of polyphony
+          "volume": 0, //remember to allow for the cumalative effects of polyphony
           "detune": 0,
           "portamento": 0,
           "envelope": {
@@ -178,13 +190,73 @@ function startAudio() {
       );
 }
 
+function mousePressed() { //p5 mouse function/ event handler
+  if(soundOn) {
+    for (let i = 0; i < numberOfButtons; i++) { // for each button
+      let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
+      if (d < radius) { // is the mouse where a button is?
+        mouseState[i] = 1;
+      }
+      handleMouseAndKeys();
+    }
+  }else{
+    startAudio();
+  }
+}
+
+function mouseReleased() { //p5 mouse function/ event handler
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    mouseState[i] = 0;
+    }
+  handleMouseAndKeys();
+}
+
+function mouseDragged() {
+
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
+    if (d < radius) { // is the mouse where a button is?
+      mouseState[i] = 1;
+    }else{
+      mouseState[i] = 0;
+    }
+  }
+  handleMouseAndKeys();
+}
+
+function handleMouseAndKeys() {   // this function ensures only one "on" or "off" between mouse and key interactions
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    if((mouseState[i] === 1) && (whichKey[i] === 0)){ // if the button is on
+      playSynth(i); // call play synth for that button
+     }else if((mouseState[i] === 0) && (whichKey[i] === 1)){ // if the button is on
+      playSynth(i); // call play synth for that button
+    }else if ((mouseState[i] === 0) && (whichKey[i] === 0)){ // otherwise if the button is off
+      stopSynth(i); // call stopsynth for that button
+    }else{
+      return;
+    }
+  }
+
+  // for (let i = 0; i < numberOfButtons; i++) { // for each button
+  //   if((mouseState[i] === 1) && (whichKey[i] === 0)) { // if the button is on
+  //     playSynth(i); // call play synth for that button
+  //   }else if((mouseState[i] === 0) && (whichKey[i] === 1)) { // if the button is on
+  //     playSynth(i); // call play synth for that button
+  //   }else if((mouseState[i] === 0) && (whichKey[i] === 0)) { // if the button is on
+  //     return;
+  //   }else{ // otherwise if the button is off
+  //     stopSynth(i); // call stopsynth for that button
+  //   }
+  // }
+}
+
 function handleStart(e) {
   e.preventDefault(); // prevent default touch actions like scroll
   if(soundOn){
     let _touches = e.changedTouches; //assign the changedTouches to an array called touches
     ongoingTouches.push(copyTouch(_touches[0])); //copy the new touch into the ongoingTouches array
     //console.log(ongoingTouches); // debugging
-    buttonPressed(e);
+    touchButton(e);
   }else{
     startAudio();
     let _touches = e.changedTouches; //assign the changedTouches to an array called touches
@@ -207,7 +279,7 @@ function handleMove(e) {
       console.log("can't figure out which touch to continue");
     }
   }
-  buttonPressed(e);
+  touchButton(e);
 }
 
 function handleEnd(e) {
@@ -220,13 +292,13 @@ function handleEnd(e) {
 
     if (idx >= 0) { // did we get a match?
       console.log("touchend "+idx);
-      //buttonPressed(e);
+      //touchButton(e);
       ongoingTouches.splice(idx, 1);  // remove it; we're done
     } else { // no match
       console.log("can't figure out which touch to end");
     }
   }
-  buttonPressed(e);
+  touchButton(e);
     for (let t of e.changedTouches) { // cycle through the changedTouches array
       // console.log("touch id " + t.identifier + // debugging
       //   " released at x: " + t.clientX +
@@ -266,7 +338,7 @@ for (var i = 0; i < ongoingTouches.length; i++) {
 return -1;    // not found
 }
 
-function buttonPressed() {
+function touchButton() { // function to handle the touch interface with the buttons
 
   let _touches = ongoingTouches; //assign the changedTouches to an array called touches
   let _buttonState = []; // array to store buttonstate in
@@ -285,10 +357,8 @@ function buttonPressed() {
         let d = dist(_touches[t].clientX, _touches[t].clientY - offset.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
         if (d < radius) { // is the touch where a button is?
           _buttonState[i] = 1; // the the button is on
-          console.log("if");
         }else{
           _buttonState[i] = _buttonState[i] + 0; // otherwise add a 0 to the state of that button (another toucch might have put it on you see)
-          console.log("else");
         }
       }
     }
@@ -317,72 +387,72 @@ function handleKeyDown(e) {
     switch(key) {  /// working here! - retriggering keys so remove the play synth and do a for loop on the array to play
       case "KeyQ" :
         if(whichKey[0] === 0) {
-          playSynth(0);
           whichKey[0] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyW" :
         if(whichKey[1] === 0) {
-          playSynth(1);
           whichKey[1] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyE" :
         if(whichKey[2] === 0) {
-          playSynth(2);
           whichKey[2] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyR" :
         if(whichKey[3] === 0) {
-          playSynth(3);
           whichKey[3] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyT" :
         if(whichKey[4] === 0) {
-          playSynth(4);
           whichKey[4] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyY" :
         if(whichKey[5] === 0) {
-          playSynth(5);
           whichKey[5] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyU" :
         if(whichKey[6] === 0) {
-          playSynth(6);
           whichKey[6] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyI" :
         if(whichKey[7] === 0) {
-          playSynth(7);
           whichKey[7] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
         }
       case "KeyO" :
         if(whichKey[8] === 0) {
-          playSynth(8);
           whichKey[8] = 1;
+          handleMouseAndKeys();
           break;
         } else {
           break;
@@ -398,40 +468,40 @@ function handleKeyUp(e) {
   console.log("keyup "+key); //debugging
   switch(key) {
     case "KeyQ" :
-      stopSynth(0);
       whichKey[0] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyW" :
-      stopSynth(1);
       whichKey[1] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyE" :
-      stopSynth(2);
       whichKey[2] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyR" :
-      stopSynth(3);
       whichKey[3] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyT" :
-      stopSynth(4);
       whichKey[4] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyY" :
-      stopSynth(5);
       whichKey[5] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyU" :
-      stopSynth(6);
       whichKey[6] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyI" :
-      stopSynth(7);
       whichKey[7] = 0;
+      handleMouseAndKeys();
       break;
     case "KeyO" :
-      stopSynth(8);
       whichKey[8] = 0;
+      handleMouseAndKeys();
       break;
   }
 

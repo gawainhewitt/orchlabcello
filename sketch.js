@@ -1,4 +1,4 @@
-//mouse interferring with touch. also build circle other way please
+//turn this into a baseline template before continuing
 
 
 // sizing and resizing dynamically is happening in css #mycanvas and #parentdiv - overrides what's happening in here
@@ -42,10 +42,12 @@ let synth; // variable within which to create the synth
 let soundOn = false; // have we instigated Tone.start() yet? (needed to allow sound)
 let whichKey = [0,0,0,0,0,0,0,0,0]; // array ensures only one trigger per qwerty click
 let mouseState = []; // variable to store mouse clicks and drags in
+let mouseClick = false;
 
 
 function setup() {  // setup p5
   step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6
+  console.log(`step = ${step}`);
   scale = pentatonic; // sets the default scale on load
 
   document.addEventListener('keydown', handleKeyDown); //add listener for keyboard input
@@ -69,8 +71,9 @@ function setup() {  // setup p5
   el.addEventListener("touchend", handleEnd, false);
   el.addEventListener("touchcancel", handleCancel, false);
   el.addEventListener("touchmove", handleMove, false);
-  // el.addEventListener("mousedown", handleMouseDown); // using the p5 ones for now however no interaction with touch so i think mouse functions are interfering with touch
-  // el.addEventListener("mouseup", handleMouseUp);
+  el.addEventListener("mousedown", handleMouseDown);
+  el.addEventListener("mouseup", handleMouseUp);
+  el.addEventListener("mousemove", handleMouseMove);
   offset = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
   colorMode(HSB, numberOfButtons + 1); // specify HSB colormode and set the range to be between 0 and numberOfButtons
@@ -102,7 +105,7 @@ function createButtonPositions() {
     let _y = r * cos(angle);
     let theNote = scale[i] + octave + theKey; // the note plus the octave plus the offset from the key menu
 
-    console.log(scale);
+    console.log(`position ${i} x = ${_x} y = ${_y}`);
 
     //create our buttonPositions array
     buttonPositions.push({
@@ -122,6 +125,10 @@ function createButtonPositions() {
   }
   console.log(notes);
   console.log("offset height = " + offset.top);
+  buttonPositions.reverse(); // reverse the array
+  let firstButton = buttonPositions.pop(); //remove last element from the array
+  buttonPositions.unshift(firstButton); // and put it at the front
+
 }
 
 /*
@@ -193,39 +200,40 @@ function startAudio() {
       );
 }
 
-// function mousePressed() { //p5 mouse function/ event handler
-//   if(soundOn) {
-//     for (let i = 0; i < numberOfButtons; i++) { // for each button
-//       let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
-//       if (d < radius) { // is the mouse where a button is?
-//         mouseState[i] = 1;
-//       }
-//       handleMouseAndKeys();
-//     }
-//   }else{
-//     startAudio();
-//   }
-// }
+function handleMouseDown(e) {
+  mouseClick = true;
+  if(soundOn) {
+    for (let i = 0; i < numberOfButtons; i++) { // for each button
+      let d = dist(e.offsetX, e.offsetY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - offset for vertical position in DOM
+      if (d < radius) { // is the mouse where a button is?
+        mouseState[i] = 1;
+      }
+      handleMouseAndKeys();
+    }
+  }else{
+    startAudio();
+  }
+}
 
-// function mouseReleased() { //p5 mouse function/ event handler
-//   for (let i = 0; i < numberOfButtons; i++) { // for each button
-//     mouseState[i] = 0;
-//     }
-//   handleMouseAndKeys();
-// }
+function handleMouseUp() {
+  mouseClick = false;
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    mouseState[i] = 0;
+    }
+  handleMouseAndKeys();
+}
 
-// function mouseDragged() {
-
-//   for (let i = 0; i < numberOfButtons; i++) { // for each button
-//     let d = dist(mouseX, mouseY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - don't need the offset for the p5 mouse function
-//     if (d < radius) { // is the mouse where a button is?
-//       mouseState[i] = 1;
-//     }else{
-//       mouseState[i] = 0;
-//     }
-//   }
-//   handleMouseAndKeys();
-// }
+function handleMouseMove(e) {
+  for (let i = 0; i < numberOfButtons; i++) { // for each button
+    let d = dist(e.offsetX, e.offsetY, buttonPositions[i].x, buttonPositions[i].y); // compare the mouse to the button position - offset for vertical position in DOM
+    if ((d < radius) && (mouseClick === true)) { // is the mouse where a button is and is the button clicked?
+      mouseState[i] = 1;
+    }else{
+      mouseState[i] = 0;
+    }
+  }
+  handleMouseAndKeys();
+}
 
 function handleMouseAndKeys() {   // this function ensures only one "on" or "off" between mouse and key interactions
   for (let i = 0; i < numberOfButtons; i++) { // for each button
@@ -239,18 +247,6 @@ function handleMouseAndKeys() {   // this function ensures only one "on" or "off
       return;
     }
   }
-
-  // for (let i = 0; i < numberOfButtons; i++) { // for each button
-  //   if((mouseState[i] === 1) && (whichKey[i] === 0)) { // if the button is on
-  //     playSynth(i); // call play synth for that button
-  //   }else if((mouseState[i] === 0) && (whichKey[i] === 1)) { // if the button is on
-  //     playSynth(i); // call play synth for that button
-  //   }else if((mouseState[i] === 0) && (whichKey[i] === 0)) { // if the button is on
-  //     return;
-  //   }else{ // otherwise if the button is off
-  //     stopSynth(i); // call stopsynth for that button
-  //   }
-  // }
 }
 
 function handleStart(e) {
@@ -295,7 +291,6 @@ function handleEnd(e) {
 
     if (idx >= 0) { // did we get a match?
       console.log("touchend "+idx);
-      //touchButton(e);
       ongoingTouches.splice(idx, 1);  // remove it; we're done
     } else { // no match
       console.log("can't figure out which touch to end");

@@ -69,7 +69,7 @@ function setup() {  // setup p5
   el.addEventListener("mousemove", handleMouseMove);
   offset = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
-  colorMode(HSB, numberOfButtons + 1); // specify HSB colormode and set the range to be between 0 and numberOfButtons
+  colorMode(HSB); // specify HSB colormode and set the range to be between 0 and numberOfButtons
   noStroke(); // no stroke on the drawings
 
   radius = width/8;
@@ -87,10 +87,10 @@ function setup() {  // setup p5
 }
 
 function welcomeScreen() {
-  background(1, 0, 4); // background is grey (remember 5 is maximum because of the setup of colorMode)
+  background(100, 0, 50); // background is grey (remember 5 is maximum because of the setup of colorMode)
   textSize(32);
   textAlign(CENTER, CENTER);
-  text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYU", width/10, height/10, (width/10) * 8, (height/10) * 8);
+  text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUI", width/10, height/10, (width/10) * 8, (height/10) * 8);
 }
 
 function createButtonPositions() {
@@ -108,9 +108,9 @@ function createButtonPositions() {
     });
 
     buttonState.push(0); //create default state of the buttons array
-    buttonColour.push(i); // set default colour of the buttons
-    buttonOffColour.push(i); // create default off colours
-    buttonOnColour.push(numberOfButtons); // create default on colours
+    buttonColour.push(300); // set default colour of the buttons
+    buttonOffColour.push(300); // create default off colours
+    buttonOnColour.push(60); // create default on colours
     synthState.push(0); //create default state of the synth array
     notes.push(allTheNotes[theNote]); //create the scale that we are using
 
@@ -154,9 +154,9 @@ function draw() {  // p5 draw function - the traditional way to do this in p5 - 
 
 
 function drawSynth() { // instead of using the draw function at 60 frames a second we will call this function when something changes
-  background(1, 0, 4); // background is grey (remember 5 is maximum)
+  background(100, 0, 50); // background is grey (remember 5 is maximum)
   for (let i = 0; i < numberOfButtons; i++) {
-    fill(buttonColour[i], (numberOfButtons/4)*3, (numberOfButtons/4)*3);
+    fill(buttonColour[i], 70, 70);
     ellipse(buttonPositions[i].x, buttonPositions[i].y, radius * 2);
   }
 }

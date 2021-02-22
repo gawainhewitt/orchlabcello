@@ -90,7 +90,7 @@ function welcomeScreen() {
   background(100, 0, 50); // background is grey (remember 5 is maximum because of the setup of colorMode)
   textSize(32);
   textAlign(CENTER, CENTER);
-  text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUI", width/10, height/10, (width/10) * 8, (height/10) * 8);
+  text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUIO", width/10, height/10, (width/10) * 8, (height/10) * 8);
 }
 
 function createButtonPositions() {

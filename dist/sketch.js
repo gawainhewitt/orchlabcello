@@ -81,9 +81,18 @@ function setup() {  // setup p5
     mouseState.push(0);
   }
 
+  if (window.DeviceOrientationEvent) {      // if device orientation changes we recalculate the offsetT variable
+    window.addEventListener("deviceorientation", handleOrientationEvent);
+  }
+
   welcomeScreen(); // initial screen for project - also allows an elegant place to put in the Tone.start() command.
                     // if animating put an if statement in the draw() function otherwise it will instantly overide it
   createButtonPositions(); // generate the default array info depending on number of buttons
+}
+
+function handleOrientationEvent() {
+  let el = document.getElementById("p5parent");
+  offsetT = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 }
 
 function welcomeScreen() {

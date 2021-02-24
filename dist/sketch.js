@@ -349,7 +349,7 @@ function touchButton() { // function to handle the touch interface with the butt
   if(_touches.length != 0){ // if the touches array isn't empty
     for (var t = 0; t < _touches.length; t++) {  // for each touch
       for (let i = 0; i < numberOfButtons; i++) { // for each button
-        let d = dist(_touches[t].clientX - offsetT.left, _touches[t].clientY - offsetT.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
+        let d = dist(_touches[t].clientX - offsetT.left, _touches[t].clientY + offsetT.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
         if (d < radius) { // is the touch where a button is?
           _buttonState[i] = 1; // the the button is on
         }else{

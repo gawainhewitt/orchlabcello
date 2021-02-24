@@ -8,7 +8,7 @@ let buttonOffColour = []; // default off colours
 let buttonOnColour = []; // default on colours
 let synthState = []; // we need to store whether a note is playing because the synth is polyphonic and it will keep accepting on messages with every touch or moved touch and we won't be able to switch them all off
 let radius; // radius of the buttons
-let offset; // to store the difference between x and y readings once menus are taken into account
+let offsetT; // to store the difference between x and y readings once menus are taken into account
 let r; // radius of the circle around which the buttons will be drawn
 let angle = 0; // variable within which to store the angle of each button as we draw it
 let step; // this will be calculated and determine the gap between each button around the circle
@@ -67,7 +67,7 @@ function setup() {  // setup p5
   el.addEventListener("mousedown", handleMouseDown);
   el.addEventListener("mouseup", handleMouseUp);
   el.addEventListener("mousemove", handleMouseMove);
-  offset = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
+  offsetT = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
   colorMode(HSB); // specify HSB colormode and set the range to be between 0 and numberOfButtons
   noStroke(); // no stroke on the drawings
@@ -116,7 +116,7 @@ function createButtonPositions() {
 
   }
   console.log(notes);
-  console.log("offset height = " + offset.top);
+  console.log("offset height = " + offsetT.top);
 }
 
 /*
@@ -340,7 +340,7 @@ function touchButton() { // function to handle the touch interface with the butt
   if(_touches.length != 0){ // if the touches array isn't empty
     for (var t = 0; t < _touches.length; t++) {  // for each touch
       for (let i = 0; i < numberOfButtons; i++) { // for each button
-        let d = dist(_touches[t].clientX, _touches[t].clientY - offset.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
+        let d = dist(_touches[t].clientX - offsetT.left, _touches[t].clientY - offsetT.top, buttonPositions[i].x, buttonPositions[i].y); // compare the touch to the button position
         if (d < radius) { // is the touch where a button is?
           _buttonState[i] = 1; // the the button is on
         }else{

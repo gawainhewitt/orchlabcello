@@ -1,5 +1,6 @@
 let numberOfButtons = 9;// automatically generate circular synth based on this
 
+var picSize;            // how big are the images in each case?
 let endedTouches = []; // array to store ended touches in
 let buttonPositions = []; // position to draw the buttons
 let buttonState = []; //store state of the buttons
@@ -36,7 +37,15 @@ let soundOn = false; // have we instigated Tone.start() yet? (needed to allow so
 let whichKey = [0,0,0,0,0,0,0,0,0]; // array ensures only one trigger per qwerty click
 let mouseState = []; // variable to store mouse clicks and drags in
 let mouseClick = false;
+var orchlabLogo;
+var lpoLogo;
+var dmLogo;
 
+function preload() {
+  orchlabLogo = loadImage('assets/orchlablogo.jpg');
+  lpoLogo = loadImage('assets/LPO_logo.png');
+  dmLogo = loadImage('assets/DMLogo.png');
+}
 
 function setup() {  // setup p5
   step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6 - this will be used to draw the circles position
@@ -51,6 +60,7 @@ function setup() {  // setup p5
   let masterLeft = divPos.left; // distance from left of screen to left edge of bounding box
   let masterRight = divPos.right; // distance from left of screen to the right edge of bounding box
   let cnvDimension = masterRight - masterLeft; // size of div -however in some cases this is wrong, so i am now using css !important to set the size and sca;ing - but have kept this to work out size of other elements if needed
+  picSize = cnvDimension/4;
 
   console.log("canvas sixe = " + cnvDimension);
 
@@ -96,10 +106,29 @@ function handleOrientationEvent() {
 }
 
 function welcomeScreen() {
-  background(100, 0, 50); // background is grey (remember 5 is maximum because of the setup of colorMode)
-  textSize(32);
-  textAlign(CENTER, CENTER);
-  text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUIO", width/10, height/10, (width/10) * 8, (height/10) * 8);
+  // background(100, 0, 50); // background is grey (remember 5 is maximum because of the setup of colorMode)
+  // textSize(32);
+  // textAlign(CENTER, CENTER);
+  // text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUIO", width/10, height/10, (width/10) * 8, (height/10) * 8);
+  textAlign(CENTER, CENTER); // where the text goes on the screen
+  colorMode(RGB);
+  background(245, 247, 247);
+  imageMode(CORNER);
+  image(orchlabLogo, (width/2 - (((picSize/2)*2.63)/2)), 10, ((picSize/2)*2.63), picSize/2);
+  fill('#212529');
+  textSize(width/10);
+  text("Percussion Box", width/2, picSize);
+  textSize(width/18);
+  text('To play: ', width/2, picSize/4 * 6);
+  text('touch or click screen,', width/2, picSize/4 * 7);
+  text('or use QWERTYUIO keys', width/2, picSize/4 * 8);
+  text('on a keyboard', width/2, picSize/4 * 9);
+  text('On Apple devices,', width/2, picSize/4 * 11);
+  text('turn off silent mode', width/2, picSize/4 * 12);
+  imageMode(CORNERS);
+  image(lpoLogo, width/6, ((height/10 * 9)-10), width/6 + ((height/10) * 1.95), height-10);
+  image(dmLogo, width/6 * 5 - ((height/10) * 1.41), ((height/10 * 9)-10), width/6 * 5, height-10);
+  colorMode(HSB);
 }
 
 function createButtonPositions() {

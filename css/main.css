@@ -139,7 +139,7 @@ span.clear { clear: left; display: block; } /* clears the float thus ensuring th
   }
 
   .select-selected {
-    background-color: rgb(154, 30, 255);
+    background-color: #AD71DD;
   }
 
   /* Style the arrow inside the select element: */

@@ -79,7 +79,6 @@ function setup() {  // setup p5
   el.addEventListener("mousemove", handleMouseMove);
   offsetT = el.getBoundingClientRect(); // get the size and position of the p5parent div so i can use offset top to work out where touch and mouse actually need to be
 
-  colorMode(HSB); // specify HSB colormode and set the range to be between 0 and numberOfButtons
   noStroke(); // no stroke on the drawings
 
   radius = width/8;
@@ -111,24 +110,22 @@ function welcomeScreen() {
   // textAlign(CENTER, CENTER);
   // text("Orchlab Synth Cello. Touch screen or click mouse or use keys QWERTYUIO", width/10, height/10, (width/10) * 8, (height/10) * 8);
   textAlign(CENTER, CENTER); // where the text goes on the screen
-  colorMode(RGB);
   background(245, 247, 247);
   imageMode(CORNER);
   image(orchlabLogo, (width/2 - (((picSize/2)*2.63)/2)), 10, ((picSize/2)*2.63), picSize/2);
   fill('#212529');
   textSize(width/10);
-  text("Percussion Box", width/2, picSize);
+  text("Synth", width/2, picSize);
   textSize(width/18);
   text('To play: ', width/2, picSize/4 * 6);
   text('touch or click screen,', width/2, picSize/4 * 7);
-  text('or use QWERTYUIO keys', width/2, picSize/4 * 8);
+  text('or use ZXCVBNM,. keys', width/2, picSize/4 * 8);
   text('on a keyboard', width/2, picSize/4 * 9);
   text('On Apple devices,', width/2, picSize/4 * 11);
   text('turn off silent mode', width/2, picSize/4 * 12);
   imageMode(CORNERS);
   image(lpoLogo, width/6, ((height/10 * 9)-10), width/6 + ((height/10) * 1.95), height-10);
   image(dmLogo, width/6 * 5 - ((height/10) * 1.41), ((height/10 * 9)-10), width/6 * 5, height-10);
-  colorMode(HSB);
 }
 
 function createButtonPositions() {
@@ -146,9 +143,9 @@ function createButtonPositions() {
     });
 
     buttonState.push(0); //create default state of the buttons array
-    buttonColour.push(300); // set default colour of the buttons
-    buttonOffColour.push(300); // create default off colours
-    buttonOnColour.push(60); // create default on colours
+    buttonColour.push("#AD71DD"); // set default colour of the buttons
+    buttonOffColour.push("#AD71DD"); // create default off colours
+    buttonOnColour.push("#06C0F0"); // create default on colours
     synthState.push(0); //create default state of the synth array
     notes.push(allTheNotes[theNote]); //create the scale that we are using
 
@@ -192,9 +189,9 @@ function draw() {  // p5 draw function - the traditional way to do this in p5 - 
 
 
 function drawSynth() { // instead of using the draw function at 60 frames a second we will call this function when something changes
-  background(100, 0, 50); // background is grey (remember 5 is maximum)
+  background("#FBAC2E"); // orchlab orange
   for (let i = 0; i < numberOfButtons; i++) {
-    fill(buttonColour[i], 70, 70);
+    fill(buttonColour[i]);
     ellipse(buttonPositions[i].x, buttonPositions[i].y, radius * 2);
   }
 }
@@ -214,7 +211,7 @@ function startAudio() {
           "detune": 0,
           "portamento": 0,
           "envelope": {
-            "attack": 25,
+            "attack": 5,
             "attackCurve": "linear",
             "decay": 0,
             "decayCurve": "exponential",
@@ -405,15 +402,15 @@ function touchButton() { // function to handle the touch interface with the butt
 }
 
 keyMap = {
-  'KeyQ' : 0,
-  'KeyW' : 1,
-  'KeyE' : 2,
-  'KeyR' : 3,
-  'KeyT' : 4,
-  'KeyY' : 5,
-  'KeyU' : 6,
-  'KeyI' : 7,
-  'KeyO' : 8
+  'KeyZ' : 0,
+  'KeyX' : 1,
+  'KeyC' : 2,
+  'KeyV' : 3,
+  'KeyB' : 4,
+  'KeyN' : 5,
+  'KeyM' : 6,
+  'Comma' : 7,
+  'Period' : 8
 }
 
 function handleKeyDown(e) {

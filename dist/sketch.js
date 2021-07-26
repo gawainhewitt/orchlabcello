@@ -115,7 +115,7 @@ function welcomeScreen() {
   image(orchlabLogo, (width/2 - (((picSize/2)*2.63)/2)), 10, ((picSize/2)*2.63), picSize/2);
   fill('#212529');
   textSize(width/10);
-  text("Synth", width/2, picSize);
+  text("Circles", width/2, picSize);
   textSize(width/18);
   text('To play: ', width/2, picSize/4 * 6);
   text('touch or click screen,', width/2, picSize/4 * 7);
@@ -211,7 +211,7 @@ function startAudio() {
           "detune": 0,
           "portamento": 0,
           "envelope": {
-            "attack": 5,
+            "attack": 0,
             "attackCurve": "linear",
             "decay": 0,
             "decayCurve": "exponential",

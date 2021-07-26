@@ -211,7 +211,7 @@ function startAudio() {
           "detune": 0,
           "portamento": 0,
           "envelope": {
-            "attack": 5,
+            "attack": 0,
             "attackCurve": "linear",
             "decay": 0,
             "decayCurve": "exponential",

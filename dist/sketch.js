@@ -207,7 +207,7 @@ function startAudio() {
     }).toDestination(); // create a polysynth
     synth.set(  // setup the synth - this is audio stuff really
         {
-          "volume": 0, //remember to allow for the cumalative effects of polyphony
+          "volume": -30, //remember to allow for the cumalative effects of polyphony
           "detune": 0,
           "portamento": 0,
           "envelope": {

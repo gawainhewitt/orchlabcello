@@ -42,7 +42,7 @@ var lpoLogo;
 var dmLogo;
 
 function preload() {
-  orchlabLogo = loadImage('assets/orchlablogo.jpg');
+  orchlabLogo = loadImage('assets/orchlablogo.png');
   lpoLogo = loadImage('assets/LPO_logo.png');
   dmLogo = loadImage('assets/DMLogo.png');
 }
@@ -193,6 +193,9 @@ function drawSynth() { // instead of using the draw function at 60 frames a seco
   for (let i = 0; i < numberOfButtons; i++) {
     fill(buttonColour[i]);
     ellipse(buttonPositions[i].x, buttonPositions[i].y, radius * 2);
+    fill(0, 0, 0);
+    let note = notes[i]
+    text(`${note.slice(0, -1)}`, buttonPositions[i].x, buttonPositions[i].y);
   }
 }
 
@@ -579,4 +582,5 @@ function stopSynth(i) {
        notes[i] = allTheNotes[theNote]; // pick the notes from the all the notes array
      }
    }
+   drawSynth();
  }

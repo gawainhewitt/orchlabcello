@@ -90,9 +90,15 @@ function setup() {  // setup p5
     mouseState.push(0);
   }
 
-  if (window.DeviceOrientationEvent) {      // if device orientation changes we recalculate the offsetT variable
-    window.addEventListener("deviceorientation", handleOrientationEvent);
-  }
+  // if (window.DeviceOrientationEvent) {      // if device orientation changes we recalculate the offsetT variable
+  //   window.addEventListener("deviceorientation", handleOrientationEvent);
+  // }
+
+  // window.addEventListener("deviceorientation", handleOrientationEvent);
+
+  let portrait = window.matchMedia("(orientation: portrait)");
+  portrait.addEventListener("change", handleOrientationEvent);
+
 
   welcomeScreen(); // initial screen for project - also allows an elegant place to put in the Tone.start() command.
                     // if animating put an if statement in the draw() function otherwise it will instantly overide it

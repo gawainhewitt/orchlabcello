@@ -30,7 +30,7 @@ var majorBlues = [0,2,3,4,7,9,12,14,15]; // intervals for a major blues scale fo
 var minorBlues = [0,3,5,6,7,10,12,15,17]; // intervals for a minor scale for 9 notes
 var scales = ["default", pentatonic, major, minor, majorBlues, minorBlues];
 var scale; // variable to store the scale in
-var theKey = 0; // this variable sets the default key on load
+var theKey = 5; // this variable sets the default key on load
 var octave = 36; //set the default octave on load
 let synth; // variable within which to create the synth
 let soundOn = false; // have we instigated Tone.start() yet? (needed to allow sound)
@@ -50,7 +50,7 @@ function preload() {
 function setup() {  // setup p5
   step = TWO_PI/numberOfButtons; // in radians the equivalent of 360/6 - this will be used to draw the circles position
   console.log(`step = ${step}`);
-  scale = pentatonic; // sets the default scale on load
+  scale = minor; // sets the default scale on load
 
   document.addEventListener('keydown', handleKeyDown); //add listener for keyboard input
   document.addEventListener('keyup', handleKeyUp); //add listener for keyboard input
